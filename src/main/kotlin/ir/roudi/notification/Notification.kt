@@ -1,4 +1,4 @@
-package ir.roudi
+package ir.roudi.notification
 
 import kotlinx.serialization.Serializable
 import java.util.concurrent.atomic.AtomicInteger
