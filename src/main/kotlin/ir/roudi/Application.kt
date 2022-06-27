@@ -9,7 +9,7 @@ fun main() {
 }
 
 private fun runNotificationServer(wait: Boolean = true) {
-    embeddedServer(Netty, port = 8080, host = "127.0.0.1") {
+    embeddedServer(Netty, host = Config.NOTIFICATION_HOST, port = Config.NOTIFICATION_PORT) {
         configureNotificationRouting()
         configureSerialization()
     }.start(wait = wait)
