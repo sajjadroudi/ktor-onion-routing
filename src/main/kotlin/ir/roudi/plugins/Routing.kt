@@ -13,7 +13,7 @@ fun Application.configureRouting() {
 
     routing {
         get("/") {
-            call.respond(DataSource.getAllNotifications(), status = HttpStatusCode.OK)
+            call.respond(HttpStatusCode.OK, DataSource.getAllNotifications())
         }
 
         post {
@@ -21,7 +21,7 @@ fun Application.configureRouting() {
             Notification.create(title).let {
                 DataSource.saveNotification(it)
             }
-            call.respond("Notification saved successfully!", status = HttpStatusCode.Created)
+            call.respondText("Notification saved successfully!", status = HttpStatusCode.Created)
         }
     }
 }
