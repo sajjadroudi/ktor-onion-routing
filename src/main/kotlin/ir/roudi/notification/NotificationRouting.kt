@@ -17,8 +17,10 @@ fun Application.configureNotificationRouting() {
         }
 
         post {
-            val title = call.receiveParameters().getOrFail("title")
-            Notification.create(title).let {
+            val params = call.receiveParameters()
+            val text = params.getOrFail("text")
+            val user = params.getOrFail("user")
+            Notification.create(text, user).let {
                 DataSource.saveNotification(it)
             }
             call.respondText("Notification saved successfully!", status = HttpStatusCode.Created)
