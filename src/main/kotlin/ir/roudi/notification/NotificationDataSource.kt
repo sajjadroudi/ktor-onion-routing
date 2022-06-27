@@ -1,6 +1,6 @@
 package ir.roudi.notification
 
-object DataSource {
+object NotificationDataSource {
 
     private val storage = mutableListOf<Notification>()
 
