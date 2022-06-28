@@ -1,8 +1,8 @@
 package ir.roudi.directory
 
-import ir.roudi.notification.Notification
 import kotlinx.serialization.Serializable
 import java.util.concurrent.atomic.AtomicInteger
+import ir.roudi.crypto.CryptoHandler
 
 @Serializable
 data class Node private constructor(
@@ -10,6 +10,12 @@ data class Node private constructor(
     val name: String,
     val port: Int
 ) {
+
+    @Transient
+    private val keyPair = CryptoHandler.generateKeyPair()
+
+    val publicKey: String = keyPair.publicKey
+    val privateKey: String = keyPair.privateKey
 
     companion object {
         var lastId = AtomicInteger()
