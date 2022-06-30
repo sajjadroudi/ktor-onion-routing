@@ -17,10 +17,16 @@ object CryptoHandler {
         return KeyPair(keyPair.public.encodeToString(), keyPair.private.encodeToString())
     }
 
-    fun encrypt(data: ByteArray, publicKey: String): String {
+    fun encryptWithPublicKey(data: ByteArray, publicKey: String): String {
         val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
         cipher.init(Cipher.ENCRYPT_MODE, loadPublicKey(publicKey))
         return cipher.doFinal(data).encodeToString()
+    }
+
+    fun decryptWithPublicKey(encryptedData: ByteArray, publicKey: String): String {
+        val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
+        cipher.init(Cipher.DECRYPT_MODE, loadPublicKey(publicKey))
+        return String(cipher.doFinal(Base64.getDecoder().decode(encryptedData)))
     }
 
     private fun loadPublicKey(stored: String): PublicKey {
@@ -31,7 +37,13 @@ object CryptoHandler {
         return fact.generatePublic(spec)
     }
 
-    fun decrypt(encryptedData: ByteArray, privateKey: String): String {
+    fun encryptWithPrivateKey(data: ByteArray, privateKey: String): String {
+        val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
+        cipher.init(Cipher.ENCRYPT_MODE, loadPrivateKey(privateKey))
+        return cipher.doFinal(data).encodeToString()
+    }
+
+    fun decryptWithPrivateKey(encryptedData: ByteArray, privateKey: String): String {
         val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
         cipher.init(Cipher.DECRYPT_MODE, loadPrivateKey(privateKey))
         return String(cipher.doFinal(Base64.getDecoder().decode(encryptedData)))

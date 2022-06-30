@@ -12,19 +12,6 @@ data class Node private constructor(
     val port: Int
 ) {
 
-    var publicKey = ""
-        private set
-
-    @Transient
-    var privateKey = ""
-        private set
-
-    init {
-        val keyPair = CryptoHandler.generateKeyPair()
-        publicKey = keyPair.publicKey
-        privateKey = keyPair.privateKey
-    }
-
     companion object {
         var lastId = AtomicInteger()
 
@@ -32,4 +19,5 @@ data class Node private constructor(
             return Node(lastId.getAndIncrement(), name, port)
         }
     }
+
 }
