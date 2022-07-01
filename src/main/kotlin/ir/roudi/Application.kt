@@ -4,7 +4,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import ir.roudi.directory.configureDirectoryRouting
 import ir.roudi.notification.configureNotificationRouting
-import ir.roudi.plugins.*
+import ir.roudi.plugins.configureSerialization
 
 fun main() {
     runDirectorySever(false)

@@ -15,12 +15,8 @@ fun Application.configureDirectoryRouting() {
         }
 
         post {
-            val params = call.receiveParameters()
-            val name = params.getOrFail("name")
-            val port = params.getOrFail("port")
-            Node.create(name, port.toInt()).let {
-                DirectoryDataSource.saveNode(it)
-            }
+            val node = call.receive<Node>()
+            DirectoryDataSource.saveNode(node)
             call.respondText("Node saved successfully!", status = HttpStatusCode.Created)
         }
     }
