@@ -10,4 +10,7 @@ object Config {
     const val DIRECTORY_HOST = LOCALHOST
     const val DIRECTORY_PORT = 3000
 
+    const val CLIENT_HOST = LOCALHOST
+    const val CLIENT_PORT = 8079
+
 }

@@ -17,6 +17,10 @@ object CryptoHandler {
         return KeyPair(keyPair.public.encodeToString(), keyPair.private.encodeToString())
     }
 
+    fun encryptWithPublicKey(data: String, publicKey: String) : String {
+        return encryptWithPublicKey(data.toByteArray(), publicKey)
+    }
+
     fun encryptWithPublicKey(data: ByteArray, publicKey: String): String {
         val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
         cipher.init(Cipher.ENCRYPT_MODE, loadPublicKey(publicKey))
