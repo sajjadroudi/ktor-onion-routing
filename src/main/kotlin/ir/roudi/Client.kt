@@ -1,10 +1,12 @@
 package ir.roudi
 
 import io.ktor.client.*
+import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 import ir.roudi.crypto.CryptoHandler
 import ir.roudi.directory.Node
+import ir.roudi.directory.NodesResponse
 import ir.roudi.model.*
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -13,7 +15,24 @@ class Client(
     private val client: HttpClient
 ) {
 
-    suspend fun createCircuit(nodes: List<Node>) {
+    suspend fun initialize() : NodesResponse {
+        val nodes = getNodes()
+        createCircuit(nodes.nodes)
+        return nodes
+    }
+
+    private suspend fun getNodes() : NodesResponse {
+        val response = client.get {
+            host = Config.DIRECTORY_HOST
+            port = Config.DIRECTORY_PORT
+        }.body<NodesResponse>()
+
+        val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, 4)
+
+        return NodesResponse(selectedNodes, response.circuitId)
+    }
+
+    private suspend fun createCircuit(nodes: List<Node>) {
         var request = RequestModel(RequestAction.CIRCUIT, Config.CLIENT_PORT)
         var requestBodyStr = Json.encodeToString(request)
         var encryptedBodyStr = CryptoHandler.encryptWithPublicKey(requestBodyStr, nodes[0].publicKey)
