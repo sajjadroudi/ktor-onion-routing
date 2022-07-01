@@ -6,6 +6,8 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.util.*
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.json.Json
 
 fun Application.configureNotificationRouting() {
 
@@ -15,10 +17,8 @@ fun Application.configureNotificationRouting() {
         }
 
         post {
-            val params = call.receiveParameters()
-            val text = params.getOrFail("text")
-            val user = params.getOrFail("user")
-            Notification.create(text, user).let {
+            val notif = Json.decodeFromString<TempNotif>(call.receiveText())
+            Notification.create(notif.text, notif.user).let {
                 NotificationDataSource.saveNotification(it)
             }
             call.respondText("Notification saved successfully!", status = HttpStatusCode.Created)

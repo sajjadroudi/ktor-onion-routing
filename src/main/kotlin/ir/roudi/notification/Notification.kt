@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 import java.util.concurrent.atomic.AtomicInteger
 
 @Serializable
-data class Notification private constructor(
+data class Notification(
     val id: Int,
     val text: String,
     val userName: String
