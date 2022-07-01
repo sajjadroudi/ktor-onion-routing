@@ -47,7 +47,7 @@ class Client(
         var response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
-            headers.set("circuit-id", circuitId)
+            headers.set("circuit-id", "$circuitId")
             setBody(encryptedBodyStr)
         }
 
@@ -101,7 +101,7 @@ class Client(
         val response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
-            headers.set("circuit-id", circuitId)
+            headers.set("circuit-id", "$circuitId")
             setBody(encryptedBodyStr)
         }
 
