@@ -25,9 +25,11 @@ class Client(
     private var circuitId = 0
 
     suspend fun initialize() {
+        Logger.log("Client", "Getting nodes")
         val nodes = getNodes()
         this.circuitId = nodes.circuitId
         this.nodes = nodes.nodes
+        Logger.log("Client", "Creating circuit")
         createCircuit(nodes.nodes)
     }
 
@@ -41,7 +43,7 @@ class Client(
 
         selectedNodes.map { it.name }
             .toList()
-            .let { println(it) }
+            .let { Logger.log("Client", "Selected nodes: $it") }
 
         return NodesResponse(selectedNodes, response.circuitId)
     }
@@ -106,6 +108,8 @@ class Client(
     }
 
     suspend fun getNotifications() : List<Notification> {
+        Logger.log("Client", "getting notifications")
+
         var payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, "").toJson(),
             KeyLoader.loadPublicKey(nodes[2].publicKey)
@@ -137,6 +141,8 @@ class Client(
     }
 
     suspend fun postNotification(text: String, user: String) {
+        Logger.log("Client", "posting a notification")
+
         val notif = Json.encodeToString(TempNotif(text, user))
 
         var payload = CryptoHandler.encrypt(
