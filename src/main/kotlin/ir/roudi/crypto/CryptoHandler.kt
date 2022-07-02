@@ -6,6 +6,9 @@ import java.security.spec.PKCS8EncodedKeySpec
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
+import javax.crypto.spec.SecretKeySpec
 import kotlin.String
 
 object CryptoHandler {
@@ -17,14 +20,27 @@ object CryptoHandler {
         return KeyPair(keyPair.public.encodeToString(), keyPair.private.encodeToString())
     }
 
-    fun encryptWithPublicKey(data: String, publicKey: String) : String {
+    private fun generateSymmetricKey(): SecretKey {
+        val generator = KeyGenerator.getInstance("AES")
+        generator.init(128)
+        return generator.generateKey()
+    }
+
+    fun encryptWithPublicKey(data: String, publicKey: String) : EncryptedContent {
         return encryptWithPublicKey(data.toByteArray(), publicKey)
     }
 
-    fun encryptWithPublicKey(data: ByteArray, publicKey: String): String {
+    fun encryptWithPublicKey(data: ByteArray, publicKey: String): EncryptedContent {
+        val symmetricKey = generateSymmetricKey()
+        val aesCipher = Cipher.getInstance("AES")
+        aesCipher.init(Cipher.ENCRYPT_MODE, symmetricKey)
+        val encryptedData = aesCipher.doFinal(data).encodeToString()
+
         val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
-        cipher.init(Cipher.ENCRYPT_MODE, loadPublicKey(publicKey))
-        return cipher.doFinal(data).encodeToString()
+        cipher.init(Cipher.PUBLIC_KEY, loadPublicKey(publicKey))
+        val encryptedKey = cipher.doFinal(symmetricKey.encoded).encodeToString()
+
+        return EncryptedContent(encryptedKey, encryptedData)
     }
 
     fun decryptWithPublicKey(encryptedData: String, publicKey: String) : String {
@@ -51,7 +67,19 @@ object CryptoHandler {
         return cipher.doFinal(data).encodeToString()
     }
 
-    fun decryptWithPrivateKey(encryptedData: ByteArray, privateKey: String): String {
+    fun decryptWithPrivateKey(content: EncryptedContent, privateKey: String) : String {
+        val symmetricKey = decryptWithPrivateKey(content.key, privateKey).toByteArray()
+        val key = SecretKeySpec(symmetricKey, 0, symmetricKey.size, "AES")
+        val aesCipher = Cipher.getInstance("AES")
+        aesCipher.init(Cipher.DECRYPT_MODE, key)
+        return aesCipher.doFinal(content.data.toByteArray()).encodeToString()
+    }
+
+    private fun decryptWithPrivateKey(encryptedData: String, privateKey: String) : String {
+        return decryptWithPrivateKey(encryptedData.toByteArray(), privateKey)
+    }
+
+    private fun decryptWithPrivateKey(encryptedData: ByteArray, privateKey: String): String {
         val cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding")
         cipher.init(Cipher.DECRYPT_MODE, loadPrivateKey(privateKey))
         return String(cipher.doFinal(Base64.getDecoder().decode(encryptedData)))

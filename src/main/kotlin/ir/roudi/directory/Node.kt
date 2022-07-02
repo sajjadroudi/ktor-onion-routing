@@ -2,7 +2,6 @@ package ir.roudi.directory
 
 import kotlinx.serialization.Serializable
 import java.util.concurrent.atomic.AtomicInteger
-import ir.roudi.crypto.CryptoHandler
 import kotlinx.serialization.Transient
 
 @Serializable

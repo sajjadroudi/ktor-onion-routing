@@ -5,7 +5,9 @@ import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
-import ir.roudi.crypto.CryptoHandler
+import ir.roudi.crypto.EncryptedContent
+import ir.roudi.crypto.KeyLoader
+import ir.roudi.crypto.NewCryptoHandler
 import ir.roudi.directory.Node
 import ir.roudi.directory.NodesResponse
 import ir.roudi.model.*
@@ -24,9 +26,9 @@ class Client(
 
     suspend fun initialize() {
         val nodes = getNodes()
-        createCircuit(nodes.nodes)
-        this.nodes = nodes.nodes
         this.circuitId = nodes.circuitId
+        this.nodes = nodes.nodes
+        createCircuit(nodes.nodes)
     }
 
     private suspend fun getNodes() : NodesResponse {
@@ -35,78 +37,128 @@ class Client(
             port = Config.DIRECTORY_PORT
         }.body<NodesResponse>()
 
-        val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, 4)
+        val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, Math.min(response.nodes.size, 4))
 
         return NodesResponse(selectedNodes, response.circuitId)
     }
 
     private suspend fun createCircuit(nodes: List<Node>) {
-        var request = RequestModel(RequestAction.CIRCUIT, Config.CLIENT_PORT)
-        var requestBodyStr = Json.encodeToString(request)
-        var encryptedBodyStr = CryptoHandler.encryptWithPublicKey(requestBodyStr, nodes[0].publicKey)
+        var encryptedBody = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.CIRCUIT, Config.CLIENT_PORT).toJson(),
+            KeyLoader.loadPublicKey(nodes[0].publicKey)
+        )
         var response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
+            headers["circuit-id"] = "$circuitId"
+            setBody(encryptedBody.toJson())
+        }
+
+        if(response.status.value !in 200..299)
+            throw RuntimeException()
+
+        var payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.CIRCUIT, nodes[0].port).toJson(),
+            KeyLoader.loadPublicKey(nodes[1].publicKey)
+        ).toJson()
+        encryptedBody = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[0].publicKey)
+        )
+
+        response = client.post {
+            host = Config.LOCALHOST
+            port = nodes[0].port
             headers.set("circuit-id", "$circuitId")
-            setBody(encryptedBodyStr)
+            setBody(encryptedBody.toJson())
         }
 
-        if(response.status.value !in 200..299)
-            throw RuntimeException()
+        if(response.status.value !in 200..299) {
+//            throw RuntimeException()
+        }
 
-        var payload = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.CIRCUIT, nodes[0].port)), nodes[1].publicKey)
-        encryptedBodyStr = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, nodes[1].port, payload)), nodes[0].publicKey)
+        payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.CIRCUIT, nodes[1].port).toJson(),
+            KeyLoader.loadPublicKey(nodes[2].publicKey)
+        ).toJson()
+        payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[1].publicKey)
+        ).toJson()
+        encryptedBody = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[0].publicKey)
+        )
         response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
-            setBody(encryptedBodyStr)
+            headers.set("circuit-id", "$circuitId")
+            setBody(encryptedBody.toJson())
         }
 
-        if(response.status.value !in 200..299)
-            throw RuntimeException()
-
-        payload = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.CIRCUIT, nodes[1].port)), nodes[2].publicKey)
-        payload = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, nodes[2].port, payload)), nodes[1].publicKey)
-        encryptedBodyStr = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, nodes[1].port, payload)), nodes[0].publicKey)
-        response = client.post {
-            host = Config.LOCALHOST
-            port = nodes[0].port
-            setBody(encryptedBodyStr)
+        if(response.status.value !in 200..299) {
+//            throw RuntimeException()
         }
-
-        if(response.status.value !in 200..299)
-            throw RuntimeException()
     }
 
     suspend fun getNotifications() : List<Notification> {
-        var response = client.get {
+        var payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, "").toJson(),
+            KeyLoader.loadPublicKey(nodes[2].publicKey)
+        ).toJson()
+        payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[1].publicKey)
+        ).toJson()
+        val encryptedBody = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[0].publicKey)
+        )
+
+        var response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
-        }.bodyAsText()
+            headers["circuit-id"] = "$circuitId"
+            setBody(encryptedBody.toJson())
+        }
 
-        response = CryptoHandler.decryptWithPublicKey(response, nodes[0].publicKey)
-        response = CryptoHandler.decryptWithPublicKey(response, nodes[1].publicKey)
-        response = CryptoHandler.decryptWithPublicKey(response, nodes[2].publicKey)
+        val textBody = response.bodyAsText()
+        println("resres: ${textBody}")
+        var res = Json.decodeFromString<EncryptedContent>(textBody)
 
-        return Json.decodeFromString<List<Notification>>(response)
+        res = Json.decodeFromString<EncryptedContent>(NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[0].publicKey)))
+        res = Json.decodeFromString<EncryptedContent>(NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[1].publicKey)))
+        val responseStr = NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[2].publicKey))
+
+        return Json.decodeFromString<List<Notification>>(responseStr)
     }
 
     suspend fun postNotification(text: String, user: String) {
         val notif = Json.encodeToString(TempNotif(text, user))
 
-        var payload = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, notif)), nodes[2].publicKey)
-        payload = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, nodes[2].port, payload)), nodes[1].publicKey)
-        val encryptedBodyStr = CryptoHandler.encryptWithPublicKey(Json.encodeToString(RequestModel(RequestAction.FORWARD, nodes[1].port, payload)), nodes[0].publicKey)
+        var payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, notif).toJson(),
+            KeyLoader.loadPublicKey(nodes[2].publicKey)
+        ).toJson()
+        payload = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[1].publicKey)
+        ).toJson()
+        val encryptedBody = NewCryptoHandler.encrypt(
+            RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
+            KeyLoader.loadPublicKey(nodes[0].publicKey)
+        )
 
         val response = client.post {
             host = Config.LOCALHOST
             port = nodes[0].port
-            headers.set("circuit-id", "$circuitId")
-            setBody(encryptedBodyStr)
+            headers["circuit-id"] = "$circuitId"
+            setBody(encryptedBody.toJson())
         }
 
-        if(response.status.value !in 200..299)
-            throw RuntimeException()
+        if(response.status.value !in 200..299) {
+//            throw RuntimeException()
+        }
     }
 
 }

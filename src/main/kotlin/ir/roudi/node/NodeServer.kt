@@ -1,7 +1,7 @@
 package ir.roudi.node
 
 import io.ktor.utils.io.core.*
-import ir.roudi.crypto.CryptoHandler
+import ir.roudi.crypto.KeyGenerator
 
 data class NodeServer(
     val name: String,
@@ -18,17 +18,9 @@ data class NodeServer(
         private set
 
     init {
-        val keyPair = CryptoHandler.generateKeyPair()
+        val keyPair = KeyGenerator.generateKeyPair()
         publicKey = keyPair.publicKey
         privateKey = keyPair.privateKey
-    }
-
-    fun encrypt(input: String) : String {
-        return CryptoHandler.encryptWithPublicKey(input.toByteArray(), publicKey)
-    }
-
-    fun decrypt(encryptedInput: String) : String {
-        return CryptoHandler.decryptWithPrivateKey(encryptedInput.toByteArray(), privateKey)
     }
 
     fun getOriginPortNumber(circuitId: Int) : Int? {

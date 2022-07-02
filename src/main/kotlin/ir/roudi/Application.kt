@@ -2,6 +2,7 @@ package ir.roudi
 
 import io.ktor.client.plugins.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.server.engine.*
 import io.ktor.server.netty.*
 import ir.roudi.directory.Node
@@ -24,8 +25,11 @@ fun main() {
 
     runBlocking {
         val client = Client(ktorClient)
-        client.postNotification("text1", "user1")
-        println(client.getNotifications())
+        client.initialize()
+        client.postNotification("t", "u")
+        client.postNotification("t2", "u2")
+//        println(client.getNotifications())
+        System.err.println(client.getNotifications())
     }
 
     preventFinishing()
@@ -39,30 +43,30 @@ private fun preventFinishing() {
 
 private fun runDirectorySever() {
     embeddedServer(Netty, host = Config.DIRECTORY_HOST, port = Config.DIRECTORY_PORT) {
-        configureDirectoryRouting()
         configureSerialization()
+        configureDirectoryRouting()
     }.start(wait = false)
 }
 
 private fun runNotificationServer() {
     embeddedServer(Netty, host = Config.NOTIFICATION_HOST, port = Config.NOTIFICATION_PORT) {
-        configureNotificationRouting()
         configureSerialization()
+        configureNotificationRouting()
     }.start(wait = false)
 }
 
 private fun runNodeServer(name: String, port: Int) {
     val nodeServer = NodeServer(name, port)
     embeddedServer(Netty, host = Config.LOCALHOST, port = port) {
+        configureSerialization()
         configureNodeRouting(nodeServer)
     }.start(wait = false)
 
-    val node = Json.encodeToString(Node(name, port, nodeServer.publicKey))
     runBlocking {
         ktorClient.post {
             host = Config.DIRECTORY_HOST
             this.port = Config.DIRECTORY_PORT
-            setBody(node)
+            setBody(Node(name, port, nodeServer.publicKey))
             expectSuccess = true
         }
     }
