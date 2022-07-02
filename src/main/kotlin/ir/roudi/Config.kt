@@ -8,7 +8,7 @@ object Config {
     const val NOTIFICATION_PORT = 8080
 
     const val DIRECTORY_HOST = LOCALHOST
-    const val DIRECTORY_PORT = 3000
+    var DIRECTORY_PORT = 3000
 
     const val CLIENT_HOST = LOCALHOST
     const val CLIENT_PORT = 8079

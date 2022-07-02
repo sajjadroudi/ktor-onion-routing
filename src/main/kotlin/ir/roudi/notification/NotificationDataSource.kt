@@ -6,7 +6,6 @@ object NotificationDataSource {
 
     fun saveNotification(notification: Notification) {
         storage += notification
-        println("add: $notification")
     }
 
     fun getAllNotifications() : List<Notification> = storage.toList()

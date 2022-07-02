@@ -7,7 +7,7 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import ir.roudi.crypto.EncryptedContent
 import ir.roudi.crypto.KeyLoader
-import ir.roudi.crypto.NewCryptoHandler
+import ir.roudi.crypto.CryptoHandler
 import ir.roudi.directory.Node
 import ir.roudi.directory.NodesResponse
 import ir.roudi.model.*
@@ -37,13 +37,13 @@ class Client(
             port = Config.DIRECTORY_PORT
         }.body<NodesResponse>()
 
-        val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, Math.min(response.nodes.size, 4))
+        val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, Math.min(response.nodes.size, 3))
 
         return NodesResponse(selectedNodes, response.circuitId)
     }
 
     private suspend fun createCircuit(nodes: List<Node>) {
-        var encryptedBody = NewCryptoHandler.encrypt(
+        var encryptedBody = CryptoHandler.encrypt(
             RequestModel(RequestAction.CIRCUIT, Config.CLIENT_PORT).toJson(),
             KeyLoader.loadPublicKey(nodes[0].publicKey)
         )
@@ -57,11 +57,11 @@ class Client(
         if(response.status.value !in 200..299)
             throw RuntimeException()
 
-        var payload = NewCryptoHandler.encrypt(
+        var payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.CIRCUIT, nodes[0].port).toJson(),
             KeyLoader.loadPublicKey(nodes[1].publicKey)
         ).toJson()
-        encryptedBody = NewCryptoHandler.encrypt(
+        encryptedBody = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[0].publicKey)
         )
@@ -74,18 +74,18 @@ class Client(
         }
 
         if(response.status.value !in 200..299) {
-//            throw RuntimeException()
+            throw RuntimeException()
         }
 
-        payload = NewCryptoHandler.encrypt(
+        payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.CIRCUIT, nodes[1].port).toJson(),
             KeyLoader.loadPublicKey(nodes[2].publicKey)
         ).toJson()
-        payload = NewCryptoHandler.encrypt(
+        payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[1].publicKey)
         ).toJson()
-        encryptedBody = NewCryptoHandler.encrypt(
+        encryptedBody = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[0].publicKey)
         )
@@ -97,20 +97,20 @@ class Client(
         }
 
         if(response.status.value !in 200..299) {
-//            throw RuntimeException()
+            throw RuntimeException()
         }
     }
 
     suspend fun getNotifications() : List<Notification> {
-        var payload = NewCryptoHandler.encrypt(
+        var payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, "").toJson(),
             KeyLoader.loadPublicKey(nodes[2].publicKey)
         ).toJson()
-        payload = NewCryptoHandler.encrypt(
+        payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[1].publicKey)
         ).toJson()
-        val encryptedBody = NewCryptoHandler.encrypt(
+        val encryptedBody = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[0].publicKey)
         )
@@ -123,12 +123,11 @@ class Client(
         }
 
         val textBody = response.bodyAsText()
-        println("resres: ${textBody}")
         var res = Json.decodeFromString<EncryptedContent>(textBody)
 
-        res = Json.decodeFromString<EncryptedContent>(NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[0].publicKey)))
-        res = Json.decodeFromString<EncryptedContent>(NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[1].publicKey)))
-        val responseStr = NewCryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[2].publicKey))
+        res = Json.decodeFromString<EncryptedContent>(CryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[0].publicKey)))
+        res = Json.decodeFromString<EncryptedContent>(CryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[1].publicKey)))
+        val responseStr = CryptoHandler.decrypt(res, KeyLoader.loadPublicKey(nodes[2].publicKey))
 
         return Json.decodeFromString<List<Notification>>(responseStr)
     }
@@ -136,15 +135,15 @@ class Client(
     suspend fun postNotification(text: String, user: String) {
         val notif = Json.encodeToString(TempNotif(text, user))
 
-        var payload = NewCryptoHandler.encrypt(
+        var payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, Config.NOTIFICATION_PORT, notif).toJson(),
             KeyLoader.loadPublicKey(nodes[2].publicKey)
         ).toJson()
-        payload = NewCryptoHandler.encrypt(
+        payload = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[2].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[1].publicKey)
         ).toJson()
-        val encryptedBody = NewCryptoHandler.encrypt(
+        val encryptedBody = CryptoHandler.encrypt(
             RequestModel(RequestAction.FORWARD, nodes[1].port, payload).toJson(),
             KeyLoader.loadPublicKey(nodes[0].publicKey)
         )
@@ -157,7 +156,7 @@ class Client(
         }
 
         if(response.status.value !in 200..299) {
-//            throw RuntimeException()
+            throw RuntimeException()
         }
     }
 

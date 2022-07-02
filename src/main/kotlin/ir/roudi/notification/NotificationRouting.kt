@@ -17,9 +17,7 @@ fun Application.configureNotificationRouting() {
         }
 
         post {
-            println("fucking call")
             val notif = Json.decodeFromString<TempNotif>(call.receiveText())
-//            val notif = call.receive<TempNotif>()
             Notification.create(notif.text, notif.user).let {
                 NotificationDataSource.saveNotification(it)
             }

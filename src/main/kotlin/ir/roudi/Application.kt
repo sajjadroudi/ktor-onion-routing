@@ -22,13 +22,16 @@ fun main() {
     runNodeServer("node1", 8081)
     runNodeServer("node2", 8082)
     runNodeServer("node3", 8083)
+    runNodeServer("node4", 8084)
+    runNodeServer("node5", 8085)
 
     runBlocking {
         val client = Client(ktorClient)
         client.initialize()
         client.postNotification("t", "u")
         client.postNotification("t2", "u2")
-//        println(client.getNotifications())
+        System.err.println(client.getNotifications())
+        client.postNotification("t3", "u3")
         System.err.println(client.getNotifications())
     }
 

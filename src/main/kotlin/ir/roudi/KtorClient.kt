@@ -12,7 +12,7 @@ import io.ktor.serialization.kotlinx.json.*
 val ktorClient = HttpClient(OkHttp) {
 
     install(Logging) {
-        level = LogLevel.ALL
+        level = LogLevel.NONE
     }
 
     install(ContentNegotiation) {
@@ -20,7 +20,6 @@ val ktorClient = HttpClient(OkHttp) {
     }
 
     install(DefaultRequest) {
-//        header(HttpHeaders.ContentType, "application/json; charset=UTF-8")
         header(HttpHeaders.ContentType, ContentType.Application.Json)
     }
 
