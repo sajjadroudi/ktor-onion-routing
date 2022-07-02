@@ -13,19 +13,27 @@ import ir.roudi.node.configureNodeRouting
 import ir.roudi.notification.configureNotificationRouting
 import ir.roudi.plugins.configureSerialization
 import kotlinx.coroutines.runBlocking
+import java.io.File
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.*
 
 fun main() {
-    runDirectorySever()
     runNotificationServer()
-    runNodeServer("node1", 8081)
-    runNodeServer("node2", 8082)
-    runNodeServer("node3", 8083)
-    runNodeServer("node4", 8084)
-    runNodeServer("node5", 8085)
+    val nodesContent = readTestcaseFiles()
+    Config.DIRECTORY_PORT = nodesContent.map { it.directoryPort }.first()
+    runDirectorySever()
+
+    nodesContent.forEach { runNodeServer(it.name, it.port) }
 
     runBlocking {
         val client = Client(buildKtorClient())
+        val client2 = Client(buildKtorClient())
+
         client.initialize()
+        client2.initialize()
+
+        client2.postNotification("ct", "cu")
         client.postNotification("t", "u")
         client.postNotification("t2", "u2")
         System.err.println(client.getNotifications())
@@ -34,6 +42,24 @@ fun main() {
     }
 
     preventFinishing()
+}
+
+private fun readTestcaseFiles(): List<FileContent> {
+    return Files.walk(Path.of(File("testcase").toURI()))
+        .filter(Files::isRegularFile)
+        .map {
+            val scanner = Scanner(it.toFile())
+            scanner.next()
+            val name = scanner.next()
+            scanner.next()
+            val port = scanner.nextInt()
+            scanner.next()
+            val directoryPort = scanner.nextInt()
+            scanner.close()
+
+            FileContent(name, port, directoryPort)
+        }
+        .toList()
 }
 
 private fun preventFinishing() {

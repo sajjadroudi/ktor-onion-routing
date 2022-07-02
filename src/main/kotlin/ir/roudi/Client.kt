@@ -39,6 +39,10 @@ class Client(
 
         val selectedNodes = response.nodes.toMutableList().shuffled().subList(0, Math.min(response.nodes.size, 3))
 
+        selectedNodes.map { it.name }
+            .toList()
+            .let { println(it) }
+
         return NodesResponse(selectedNodes, response.circuitId)
     }
 
