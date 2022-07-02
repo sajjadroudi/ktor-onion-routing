@@ -8,13 +8,11 @@ import io.ktor.server.netty.*
 import ir.roudi.directory.Node
 import ir.roudi.directory.configureDirectoryRouting
 import ir.roudi.node.NodeServer
+import ir.roudi.node.buildKtorClient
 import ir.roudi.node.configureNodeRouting
-import ir.roudi.node.ktorClient
 import ir.roudi.notification.configureNotificationRouting
 import ir.roudi.plugins.configureSerialization
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 fun main() {
     runDirectorySever()
@@ -26,7 +24,7 @@ fun main() {
     runNodeServer("node5", 8085)
 
     runBlocking {
-        val client = Client(ktorClient)
+        val client = Client(buildKtorClient())
         client.initialize()
         client.postNotification("t", "u")
         client.postNotification("t2", "u2")
@@ -60,9 +58,10 @@ private fun runNotificationServer() {
 
 private fun runNodeServer(name: String, port: Int) {
     val nodeServer = NodeServer(name, port)
+    val ktorClient = buildKtorClient()
     embeddedServer(Netty, host = Config.LOCALHOST, port = port) {
         configureSerialization()
-        configureNodeRouting(nodeServer)
+        configureNodeRouting(ktorClient, nodeServer)
     }.start(wait = false)
 
     runBlocking {

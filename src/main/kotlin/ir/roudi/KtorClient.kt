@@ -9,7 +9,7 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import io.ktor.serialization.kotlinx.json.*
 
-val ktorClient = HttpClient(OkHttp) {
+fun buildKtorClient() = HttpClient(OkHttp) {
 
     install(Logging) {
         level = LogLevel.NONE

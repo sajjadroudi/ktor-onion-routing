@@ -1,5 +1,6 @@
 package ir.roudi.node
 
+import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -16,11 +17,11 @@ import ir.roudi.crypto.CryptoHandler
 import ir.roudi.model.RequestAction
 import ir.roudi.model.RequestModel
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import okhttp3.internal.toNonNegativeInt
 
 fun Application.configureNodeRouting(
+    ktorClient: HttpClient,
     nodeServer: NodeServer
 ) {
 
