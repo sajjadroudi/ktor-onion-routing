@@ -36,9 +36,9 @@ fun main() {
         client2.postNotification("ct", "cu")
         client.postNotification("t", "u")
         client.postNotification("t2", "u2")
-        System.err.println(client.getNotifications())
+        println("notifications 1: ${client.getNotifications()}")
         client.postNotification("t3", "u3")
-        System.err.println(client.getNotifications())
+        println("notifications 2: ${client.getNotifications()}")
     }
 
     preventFinishing()

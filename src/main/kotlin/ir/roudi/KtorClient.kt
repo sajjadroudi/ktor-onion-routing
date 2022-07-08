@@ -12,7 +12,7 @@ import io.ktor.serialization.kotlinx.json.*
 fun buildKtorClient() = HttpClient(OkHttp) {
 
     install(Logging) {
-        level = LogLevel.NONE
+        level = LogLevel.ALL
     }
 
     install(ContentNegotiation) {
