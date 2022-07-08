@@ -1,0 +1,5 @@
+// Json of request model establishing connection with entry node
+{
+  "action": "circuit",
+  "port": 8079 // origin port (client)
+}

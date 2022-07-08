@@ -1,0 +1,13 @@
+// Json of request model establishing connection with exit node
+{
+  "action": "forward",
+  "port": 8082, // node 2 port
+  "payload": {
+    "action": "forward",
+    "port": 8083, // node 3 port
+    "payload": {
+      "action": "circuit",
+      "port": 8082 // node 2 port
+    }
+  }
+}

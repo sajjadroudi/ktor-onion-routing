@@ -1,0 +1,14 @@
+// Ordinary json of request model sending by client
+{
+    "action": "forward",
+    "port": 8082, // node 2 port
+    "payload": {
+        "action": "forward",
+        "port": 8083, // node 3 port
+        "payload": {
+            "action": "forward",
+            "port": 3000, // destination port
+            "payload": "json-data-as-string"
+        }
+    }
+}

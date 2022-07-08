@@ -1,0 +1,9 @@
+// Json of request model establishing connection with middle node
+{
+  "action": "forward",
+  "port": 8082, // node 2 port
+  "payload": {
+    "action": "circuit",
+    "port": 8081 // node 1 port
+  }
+}
